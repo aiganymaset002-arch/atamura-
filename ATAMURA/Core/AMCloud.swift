@@ -40,12 +40,13 @@ enum AMKeychain {
     }
 }
 
-/// Параметры проекта Supabase. По умолчанию — проект, где уже работает KKSU:
-/// таблицы ATA MURA (atamura_*) создаются в нём отдельно и не пересекаются с KKSU.
-/// anon-ключ публичный по замыслу Supabase: доступ ограничивают правила RLS в базе.
+/// Параметры проекта Supabase «ATA Mura».
+/// anon/publishable-ключ публичный по замыслу Supabase: доступ ограничивают правила RLS в базе.
+/// Ключ берётся в Supabase: Project Settings → API Keys → Publishable key (sb_publishable_…).
+/// Секретный ключ (service_role / sb_secret_…) в приложение не добавлять никогда.
 enum AMCloudDefaults {
-    static let projectURL = "https://vllechyeunbtozhubuud.supabase.co"
-    static let anonKey = "sb_publishable_ThNRdPI2yoG1rQxLAiwusg_CmxF8Y7Y"
+    static let projectURL = "https://erqaygvxyttofibmqdcf.supabase.co"
+    static let anonKey = ""
 }
 
 struct AMCloudSession: Codable {
