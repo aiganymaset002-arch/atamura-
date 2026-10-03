@@ -10,6 +10,7 @@
 
 import Foundation
 import CryptoKit
+import CommonCrypto
 import SwiftUI
 
 struct AMDatabase: Codable {
@@ -154,6 +155,8 @@ final class AMStore: ObservableObject {
         didSet { UserDefaults.standard.set(inclusiveMode.rawValue, forKey: "atamura.inclusive") }
     }
     @Published var aiChat: [AMChatMessage] = []
+    /// До какого времени открыта админ-панель (после ввода пароля админки).
+    @Published private(set) var adminUnlockedUntil: Date?
     /// Устройство уже работает с сервером (демо-данные убраны).
     @Published private(set) var cloudMode: Bool {
         didSet { UserDefaults.standard.set(cloudMode, forKey: "atamura.cloudMode") }
@@ -202,8 +205,11 @@ final class AMStore: ObservableObject {
         guard let currentUserId else { return nil }
         return db.users.first { $0.id == currentUserId }
     }
-    var isStaff: Bool { currentUser?.role.isStaff ?? false }
-    var isAdmin: Bool { currentUser?.role == .admin }
+    /// Аккаунт владельца платформы (единственный администратор).
+    var isOwnerAccount: Bool { currentUser?.role == .admin && currentUser?.blocked == false }
+    /// Функции администратора доступны только владельцу и только после ввода пароля админки.
+    var isStaff: Bool { isOwnerAccount && (adminUnlockedUntil ?? .distantPast) > Date() }
+    var isAdmin: Bool { isStaff }
 
     func user(_ id: UUID?) -> AMUser? {
         guard let id else { return nil }
@@ -229,7 +235,7 @@ final class AMStore: ObservableObject {
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 
-    /// Локальная регистрация (без сервера). Первый пользователь на устройстве становится администратором.
+    /// Локальная регистрация (без сервера). Все новые аккаунты — обычные участники.
     func register(fullName: String, email: String, password: String, city: String, region: AMRegion?, birthYear: Int?) throws {
         let email = email.trimmingCharacters(in: .whitespaces).lowercased()
         let name = fullName.trimmingCharacters(in: .whitespaces)
@@ -237,10 +243,9 @@ final class AMStore: ObservableObject {
         guard Self.isValidEmail(email) else { throw AMAuthError.invalidEmail }
         guard Self.isStrongPassword(password) else { throw AMAuthError.weakPassword }
         guard !db.users.contains(where: { $0.email == email }) else { throw AMAuthError.emailTaken }
-        let hasRealUsers = db.users.contains { !$0.passwordHash.isEmpty }
         var user = AMUser(fullName: name, email: email)
         user.passwordHash = Self.hash(password, email: email)
-        user.role = hasRealUsers ? .member : .admin
+        user.role = .member
         user.city = city
         user.region = region
         user.birthYear = birthYear
@@ -259,6 +264,7 @@ final class AMStore: ObservableObject {
 
     func logout() {
         saveNow()
+        lockAdmin()
         currentUserId = nil
         aiChat = []
         Task { await AMCloud.shared.signOut() }
@@ -277,6 +283,55 @@ final class AMStore: ObservableObject {
             db.users.append(user)
         }
         currentUserId = id
+    }
+
+    // MARK: - Владелец и вход в админку
+
+    /// Первичная настройка владельца на устройстве без сервера — только в отладочной сборке
+    /// из Xcode, один раз, пока на устройстве нет владельца и не задан пароль админки.
+    /// В сборке для App Store / TestFlight владелец назначается только на сервере.
+    var canClaimOwnership: Bool {
+        #if DEBUG
+        return !cloudMode && !AMCloud.shared.isConfigured && currentUser != nil
+            && !db.users.contains { $0.role == .admin } && !AMAdminSecret.isSet
+        #else
+        return false
+        #endif
+    }
+
+    func claimOwnership(password: String, repeat repeated: String) throws {
+        guard canClaimOwnership else { throw AMAdminError.notAllowed }
+        guard password == repeated else { throw AMAdminError.mismatch }
+        guard AMAdminSecret.isStrong(password) else { throw AMAdminError.weak }
+        AMAdminSecret.set(password)
+        updateCurrentUser { $0.role = .admin }
+        adminUnlockedUntil = Date().addingTimeInterval(AMAdminSecret.sessionLength)
+    }
+
+    /// Открывает админ-панель: только аккаунт владельца и только с паролем админки.
+    func unlockAdmin(password: String) async throws {
+        guard isOwnerAccount else { throw AMAdminError.notOwner }
+        if AMCloud.shared.isSignedIn {
+            try await AMCloud.shared.adminUnlock(password: password)
+        } else {
+            try AMAdminSecret.verify(password)
+        }
+        adminUnlockedUntil = Date().addingTimeInterval(AMAdminSecret.sessionLength)
+    }
+
+    func lockAdmin() {
+        guard adminUnlockedUntil != nil else { return }
+        adminUnlockedUntil = nil
+        Task { await AMCloud.shared.adminLock() }
+    }
+
+    /// Смена пароля админки на устройстве (на сервере пароль меняется в Supabase).
+    func changeAdminPassword(old: String, new: String, repeat repeated: String) throws {
+        guard isOwnerAccount, !AMCloud.shared.isConfigured else { throw AMAdminError.notAllowed }
+        try AMAdminSecret.verify(old)
+        guard new == repeated else { throw AMAdminError.mismatch }
+        guard AMAdminSecret.isStrong(new) else { throw AMAdminError.weak }
+        AMAdminSecret.set(new)
     }
 
     func enterCloudMode() {
@@ -889,4 +944,83 @@ extension JSONDecoder {
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()
+}
+
+// MARK: - Пароль админки (локальный режим)
+
+enum AMAdminError: LocalizedError {
+    case notAllowed, notOwner, mismatch, weak, wrong, locked(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .notAllowed: return L("admin.error.notAllowed")
+        case .notOwner: return L("admin.noAccess")
+        case .mismatch: return L("owner.mismatch")
+        case .weak: return L("owner.weak")
+        case .wrong: return L("admin.unlock.wrong")
+        case .locked(let minutes): return L("admin.unlock.locked", minutes)
+        }
+    }
+}
+
+/// Пароль админки хранится только в Keychain в виде PBKDF2-SHA256 (200 000 итераций) с солью.
+/// После 5 неверных попыток вход блокируется на 15 минут.
+enum AMAdminSecret {
+    static let sessionLength: TimeInterval = 2 * 3600
+    private static let account = "admin-secret"
+    private static let rounds: UInt32 = 200_000
+    private static let maxAttempts = 5
+    private static let lockout: TimeInterval = 15 * 60
+
+    static var isSet: Bool { AMKeychain.read(account: account)?.isEmpty == false }
+
+    /// Минимум 10 символов, буквы и цифры.
+    static func isStrong(_ password: String) -> Bool {
+        password.count >= 10 && password.contains(where: \.isNumber) && password.contains(where: \.isLetter)
+    }
+
+    static func set(_ password: String) {
+        let salt = Data((0..<16).map { _ in UInt8.random(in: 0...255) })
+        let hash = derive(password, salt: salt)
+        AMKeychain.save(salt.base64EncodedString() + ":" + hash.base64EncodedString(), account: account)
+        UserDefaults.standard.removeObject(forKey: "atamura.admin.fails")
+        UserDefaults.standard.removeObject(forKey: "atamura.admin.lockedUntil")
+    }
+
+    static func verify(_ password: String) throws {
+        let defaults = UserDefaults.standard
+        let lockedUntil = defaults.double(forKey: "atamura.admin.lockedUntil")
+        if lockedUntil > Date().timeIntervalSince1970 {
+            throw AMAdminError.locked(Int(ceil((lockedUntil - Date().timeIntervalSince1970) / 60)))
+        }
+        guard let stored = AMKeychain.read(account: account) else { throw AMAdminError.notAllowed }
+        let parts = stored.split(separator: ":").map(String.init)
+        guard parts.count == 2, let salt = Data(base64Encoded: parts[0]), let expected = Data(base64Encoded: parts[1]) else {
+            throw AMAdminError.notAllowed
+        }
+        let actual = derive(password, salt: salt)
+        var difference: UInt8 = actual.count == expected.count ? 0 : 1
+        for (a, b) in zip(actual, expected) { difference |= a ^ b }
+        guard difference == 0 else {
+            let fails = defaults.integer(forKey: "atamura.admin.fails") + 1
+            if fails >= maxAttempts {
+                defaults.set(0, forKey: "atamura.admin.fails")
+                defaults.set(Date().addingTimeInterval(lockout).timeIntervalSince1970, forKey: "atamura.admin.lockedUntil")
+                throw AMAdminError.locked(Int(lockout / 60))
+            }
+            defaults.set(fails, forKey: "atamura.admin.fails")
+            throw AMAdminError.wrong
+        }
+        defaults.set(0, forKey: "atamura.admin.fails")
+    }
+
+    private static func derive(_ password: String, salt: Data) -> Data {
+        var derived = [UInt8](repeating: 0, count: 32)
+        let saltBytes = [UInt8](salt)
+        let passwordLength = password.utf8.count
+        _ = CCKeyDerivationPBKDF(CCPBKDFAlgorithm(kCCPBKDF2), password, passwordLength,
+                                 saltBytes, saltBytes.count, CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256),
+                                 rounds, &derived, derived.count)
+        return Data(derived)
+    }
 }

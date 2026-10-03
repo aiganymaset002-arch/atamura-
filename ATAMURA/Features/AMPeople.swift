@@ -52,7 +52,6 @@ struct AMProfileView: View {
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         if !user.bio.isEmpty { Text(user.bio).font(.callout).multilineTextAlignment(.center) }
-                        if user.role.isStaff { AMTag(text: user.role.title, icon: "shield.fill", color: AMTheme.gold) }
                     }
                     .frame(maxWidth: .infinity)
                     Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -148,7 +147,7 @@ struct AMProfileView: View {
                 Label(L("notifications.title"), systemImage: "bell").badge(store.unreadCount)
             }
         }
-        if store.isStaff {
+        if store.isOwnerAccount {
             Section {
                 NavigationLink { AMAdminHome() } label: {
                     Label(L("admin.title"), systemImage: "shield.lefthalf.filled").bold()
@@ -348,6 +347,11 @@ struct AMSettingsView: View {
             } footer: {
                 Text(L("cloud.footer"))
             }
+            if store.canClaimOwnership {
+                AMOwnerSetupSection()
+            } else if store.isOwnerAccount && !cloud.isConfigured {
+                AMOwnerPasswordSection()
+            }
             Section {
                 SecureField("Claude API key", text: $ai.apiKey)
                 TextField(L("ai.endpoint"), text: $ai.endpoint).textInputAutocapitalization(.never).keyboardType(.URL)
@@ -370,6 +374,71 @@ struct AMSettingsView: View {
         .navigationTitle(L("settings.title"))
         .confirmationDialog(L("settings.deleteConfirm"), isPresented: $confirmDelete, titleVisibility: .visible) {
             Button(L("settings.deleteAccount"), role: .destructive) { store.deleteMyAccount() }
+        }
+    }
+}
+
+/// Первичная настройка владельца на устройстве без сервера (один раз).
+struct AMOwnerSetupSection: View {
+    @EnvironmentObject private var store: AMStore
+    @State private var password = ""
+    @State private var repeated = ""
+    @State private var error: String?
+
+    var body: some View {
+        Section {
+            SecureField(L("owner.password"), text: $password).textContentType(.newPassword)
+            SecureField(L("owner.repeat"), text: $repeated).textContentType(.newPassword)
+            if let error { Text(error).foregroundStyle(AMTheme.danger) }
+            Button(L("owner.claim")) {
+                do {
+                    try store.claimOwnership(password: password, repeat: repeated)
+                    password = ""
+                    repeated = ""
+                    error = nil
+                } catch {
+                    self.error = error.localizedDescription
+                }
+            }
+            .disabled(password.isEmpty || repeated.isEmpty)
+        } header: {
+            Text(L("owner.title"))
+        } footer: {
+            Text(L("owner.hint"))
+        }
+    }
+}
+
+/// Смена пароля админки (локальный режим; на сервере — через Supabase).
+struct AMOwnerPasswordSection: View {
+    @EnvironmentObject private var store: AMStore
+    @State private var old = ""
+    @State private var password = ""
+    @State private var repeated = ""
+    @State private var message: String?
+
+    var body: some View {
+        Section {
+            SecureField(L("owner.oldPassword"), text: $old)
+            SecureField(L("owner.password"), text: $password).textContentType(.newPassword)
+            SecureField(L("owner.repeat"), text: $repeated).textContentType(.newPassword)
+            if let message { Text(message).font(.callout) }
+            Button(L("owner.change")) {
+                do {
+                    try store.changeAdminPassword(old: old, new: password, repeat: repeated)
+                    message = L("owner.changed")
+                } catch {
+                    message = error.localizedDescription
+                }
+                old = ""
+                password = ""
+                repeated = ""
+            }
+            .disabled(old.isEmpty || password.isEmpty || repeated.isEmpty)
+        } header: {
+            Text(L("owner.title"))
+        } footer: {
+            Text(L("owner.cloudHint"))
         }
     }
 }

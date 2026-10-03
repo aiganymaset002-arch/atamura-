@@ -71,11 +71,19 @@ enum AMModerationStatus: String, Codable, CaseIterable {
 
 // MARK: - Пользователи
 
+/// Роли: участник и единственный владелец платформы (admin).
+/// Владельца нельзя назначить из приложения — только при первичной настройке
+/// (локально) или вручную в Supabase (см. backend/README.md).
 enum AMRole: String, Codable, CaseIterable {
-    case member, editor, admin
+    case member, admin
+
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = raw == "admin" ? .admin : .member
+    }
 
     var title: String { L("role.\(rawValue)") }
-    var isStaff: Bool { self != .member }
+    var isStaff: Bool { self == .admin }
 }
 
 /// Комфортный режим интерфейса (INCLUSIVE MODE).

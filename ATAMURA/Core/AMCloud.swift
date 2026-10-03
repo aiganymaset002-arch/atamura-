@@ -320,13 +320,30 @@ final class AMCloud: ObservableObject {
         }
     }
 
-    func updateMember(_ userID: UUID, role: AMRole? = nil, blocked: Bool? = nil) async throws {
-        var fields: [String: Any] = [:]
-        if let role { fields["role"] = role.rawValue }
-        if let blocked { fields["blocked"] = blocked }
-        guard !fields.isEmpty, isSignedIn else { return }
-        _ = try await request("/rest/v1/atamura_members?user_id=eq.\(userID.uuidString)", method: "PATCH", json: fields)
+    /// Администратор может только блокировать участников; роли на сервере не меняются из приложения.
+    func setBlocked(_ userID: UUID, _ blocked: Bool) async throws {
+        guard isSignedIn else { return }
+        _ = try await request("/rest/v1/atamura_members?user_id=eq.\(userID.uuidString)", method: "PATCH", json: ["blocked": blocked])
         await loadMembers()
+    }
+
+    // MARK: - Пароль админки (сервер)
+
+    /// Пароль проверяет сервер (atamura_admin_unlock): хэш хранится в базе и недоступен через API.
+    func adminUnlock(password: String) async throws {
+        let data = try await request("/rest/v1/rpc/atamura_admin_unlock", method: "POST", json: ["password": password])
+        let result = (try? JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)) as? String ?? ""
+        switch result {
+        case "ok": scheduleSync(delay: 0.2)
+        case "locked": throw AMAdminError.locked(15)
+        case "wrong": throw AMAdminError.wrong
+        default: throw AMAdminError.notOwner
+        }
+    }
+
+    func adminLock() async {
+        guard isSignedIn else { return }
+        _ = try? await request("/rest/v1/rpc/atamura_admin_lock", method: "POST", json: [String: String]())
     }
 
     // MARK: - Синхронизация
@@ -560,12 +577,14 @@ enum AMCloudCollections {
                          var user = user
                          user.passwordHash = ""
                          user.email = ""
+                         user.role = .member
                          return user
                      },
                      merge: { local, remote in
                          var merged = remote
                          merged.email = local.email
                          merged.passwordHash = local.passwordHash
+                         merged.role = local.role
                          return merged
                      }))
         result.append(list("posts", \.posts, owner: { $0.authorId }, published: { $0.status == .approved }))

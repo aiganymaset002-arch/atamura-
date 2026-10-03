@@ -88,7 +88,7 @@ struct AMHomeScreen: View {
         .navigationTitle("ATA MURA")
         .searchable(text: $query, prompt: L("home.search"))
         .toolbar {
-            if store.isStaff {
+            if store.isOwnerAccount {
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink {
                         AMAdminHome()

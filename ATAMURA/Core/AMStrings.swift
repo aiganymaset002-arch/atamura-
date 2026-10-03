@@ -93,8 +93,7 @@ inclusive.hearing.hint¦Субтитры и текстовая расшифро�
 inclusive.easyLanguage¦Easy Language¦Easy Language¦Easy Language
 inclusive.easyLanguage.hint¦AI объясняет сложные статьи простым языком — «как ребёнку 10 лет».¦AI explains complex articles in plain language — “like to a 10-year-old”.¦AI күрделі мақалаларды қарапайым тілмен түсіндіреді — «10 жасар балаға айтқандай».
 role.member¦Участник¦Member¦Қатысушы
-role.editor¦Редактор¦Editor¦Редактор
-role.admin¦Администратор¦Administrator¦Әкімші
+role.admin¦Владелец платформы¦Platform owner¦Платформа иесі
 home.search¦Поиск по истории, людям, изобретениям…¦Search history, people, inventions…¦Тарих, адамдар, өнертабыстар бойынша іздеу…
 home.hello¦Сәлем, %@! Исследуем Казахстан.¦Sälem, %@! Let's explore Kazakhstan.¦Сәлем, %@! Қазақстанды зерттейік.
 home.today¦Сегодня в ATA MURA¦Today in ATA MURA¦Бүгін ATA MURA-да
@@ -245,7 +244,7 @@ editor.linkHistory¦Связать с историей¦Link to history¦Тар�
 editor.linkHistory.hint¦Публикация будет автоматически связана с этими темами энциклопедии.¦The publication will be automatically linked to these encyclopedia topics.¦Жарияланым осы энциклопедия тақырыптарымен автоматты түрде байланысады.
 editor.publish¦Опубликовать¦Publish¦Жариялау
 editor.moderationNote¦Материал появится в ленте после проверки редакцией ATA MURA.¦The material will appear after review by the ATA MURA editors.¦Материал ATA MURA редакциясы тексергеннен кейін шығады.
-editor.staffNote¦Вы редактор: материал публикуется сразу.¦You are an editor: published immediately.¦Сіз редакторсыз: материал бірден жарияланады.
+editor.staffNote¦Вы в режиме администратора: материал публикуется сразу.¦Admin mode: published immediately.¦Әкімші режимі: материал бірден жарияланады.
 editor.published¦Опубликовано!¦Published!¦Жарияланды!
 editor.sent¦Отправлено на модерацию. Мы сообщим о решении.¦Sent for review. We'll notify you of the decision.¦Модерацияға жіберілді. Шешімді хабарлаймыз.
 stories.about¦Каждый человек может рассказать историю — не обязательно о знаменитости. Фото, документы, рассказ, аудио и видео. Лучшие истории войдут в книгу.¦Anyone can tell a story — not only about famous people. Photos, documents, narrative, audio and video. The best stories will form the book.¦Кез келген адам тарих айта алады — міндетті түрде атақты адам туралы емес. Фото, құжат, әңгіме, аудио және бейне. Үздік әңгімелер кітапқа енеді.
@@ -436,7 +435,7 @@ academy.seats¦Осталось мест: %@¦Seats left: %@¦Қалған ор�
 academy.startFree¦Начать бесплатно¦Start for free¦Тегін бастау
 academy.total¦Итого: %@¦Total: %@¦Барлығы: %@
 admin.title¦Админ-панель ATA MURA¦ATA MURA admin¦ATA MURA әкімші панелі
-admin.noAccess¦Раздел доступен только команде ATA MURA.¦Only the ATA MURA team can access this section.¦Бұл бөлім тек ATA MURA командасына қолжетімді.
+admin.noAccess¦Админ-панель доступна только владельцу ATA MURA.¦The admin panel is available only to the ATA MURA owner.¦Әкімші панелі тек ATA MURA иесіне қолжетімді.
 admin.group.studio¦ATA MURA Creator Studio¦ATA MURA Creator Studio¦ATA MURA Creator Studio
 admin.group.publishing¦Публикации и редакция¦Publishing & editorial¦Жарияланымдар және редакция
 admin.group.platform¦Платформа¦Platform¦Платформа
@@ -829,5 +828,25 @@ tasks.open¦В работе¦Open¦Орындалуда
 tasks.done¦Готово¦Done¦Дайын
 users.role¦Роль¦Role¦Рөл
 users.blocked¦Блок¦Blocked¦Бұғат
+admin.unlock.title¦Вход в админ-панель¦Admin panel sign-in¦Әкімші панеліне кіру
+admin.unlock.hint¦Введите отдельный пароль админки. Без него функции администратора недоступны даже с вашего аккаунта.¦Enter the separate admin password. Without it, admin features are unavailable even on your account.¦Әкімші панелінің жеке құпиясөзін енгізіңіз. Онсыз әкімші функциялары тіпті сіздің аккаунтыңызда да қолжетімсіз.
+admin.unlock.password¦Пароль админки¦Admin password¦Әкімші құпиясөзі
+admin.unlock.button¦Открыть админ-панель¦Open admin panel¦Әкімші панелін ашу
+admin.unlock.wrong¦Неверный пароль админки.¦Wrong admin password.¦Әкімші құпиясөзі қате.
+admin.unlock.locked¦Слишком много попыток. Попробуйте через %@ мин.¦Too many attempts. Try again in %@ min.¦Тым көп әрекет. %@ минуттан кейін қайталаңыз.
+admin.lock¦Закрыть админку¦Lock admin¦Әкімші панелін жабу
+admin.error.notAllowed¦Это действие недоступно.¦This action is not available.¦Бұл әрекет қолжетімсіз.
+users.owner¦Владелец¦Owner¦Иесі
+owner.title¦Владелец платформы¦Platform owner¦Платформа иесі
+owner.hint¦Только для владельца ATA MURA. Настраивается один раз на этом устройстве: ваш аккаунт станет единственным администратором, а админ-панель будет открываться только по этому паролю. Другие пользователи стать администратором не смогут.¦Only for the ATA MURA owner. Set up once on this device: your account becomes the only administrator and the admin panel opens only with this password. Other users cannot become administrators.¦Тек ATA MURA иесі үшін. Осы құрылғыда бір рет бапталады: аккаунтыңыз жалғыз әкімші болады, ал әкімші панелі тек осы құпиясөзбен ашылады. Басқа пайдаланушылар әкімші бола алмайды.
+owner.password¦Новый пароль админки (от 10 символов, буквы и цифры)¦New admin password (10+ characters, letters and digits)¦Жаңа әкімші құпиясөзі (10+ таңба, әріптер мен сандар)
+owner.repeat¦Повторите пароль¦Repeat password¦Құпиясөзді қайталаңыз
+owner.claim¦Стать владельцем и задать пароль¦Become owner and set password¦Иесі болу және құпиясөз қою
+owner.mismatch¦Пароли не совпадают.¦Passwords don't match.¦Құпиясөздер сәйкес емес.
+owner.weak¦Пароль админки: минимум 10 символов, буквы и цифры.¦Admin password: at least 10 characters, letters and digits.¦Әкімші құпиясөзі: кемінде 10 таңба, әріптер мен сандар.
+owner.oldPassword¦Текущий пароль админки¦Current admin password¦Қазіргі әкімші құпиясөзі
+owner.change¦Сменить пароль админки¦Change admin password¦Әкімші құпиясөзін өзгерту
+owner.changed¦Пароль админки изменён.¦Admin password changed.¦Әкімші құпиясөзі өзгертілді.
+owner.cloudHint¦Когда подключён сервер, пароль админки хранится и проверяется на сервере, а меняется в Supabase (см. backend/README.md).¦With the server connected, the admin password is stored and checked on the server and changed in Supabase (see backend/README.md).¦Сервер қосылғанда әкімші құпиясөзі серверде сақталып, тексеріледі және Supabase-те өзгертіледі (backend/README.md қараңыз).
 """#
 }

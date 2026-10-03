@@ -20,6 +20,8 @@ struct ATAMURAApp: App {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { store.saveNow() }
+            // Админ-панель закрывается, когда приложение уходит в фон.
+            if phase == .background { store.lockAdmin() }
         }
     }
 }

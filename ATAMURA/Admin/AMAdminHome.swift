@@ -2,9 +2,10 @@
 //  AMAdminHome.swift
 //  ATA MURA
 //
-//  Закрытая админ-панель (только редакторы и администраторы): Morning Dashboard,
+//  Закрытая админ-панель владельца платформы: Morning Dashboard,
 //  Creator Studio, публикации, модерация, журнал, курсы, заказы, аналитика.
-//  Обычные пользователи этот раздел не видят.
+//  Открывается только аккаунту владельца и только после ввода пароля админки.
+//  Обычные пользователи этот раздел не видят и не могут получить к нему доступ.
 //
 
 import SwiftUI
@@ -19,7 +20,11 @@ struct AMAdminHome: View {
     ]
 
     var body: some View {
-        if store.isStaff {
+        if !store.isOwnerAccount {
+            AMEmptyState(icon: "lock.fill", text: L("admin.noAccess"))
+        } else if !store.isStaff {
+            AMAdminUnlockView()
+        } else {
             List {
                 Section {
                     AMMorningDashboard()
@@ -44,8 +49,9 @@ struct AMAdminHome: View {
                 }
             }
             .navigationTitle(L("admin.title"))
-        } else {
-            AMEmptyState(icon: "lock.fill", text: L("admin.noAccess"))
+            .toolbar {
+                Button { store.lockAdmin() } label: { Label(L("admin.lock"), systemImage: "lock.fill") }
+            }
         }
     }
 
@@ -60,10 +66,68 @@ struct AMAdminHome: View {
     }
 }
 
+/// Экран ввода пароля админки.
+struct AMAdminUnlockView: View {
+    @EnvironmentObject private var store: AMStore
+    @State private var password = ""
+    @State private var error: String?
+    @State private var busy = false
+
+    var body: some View {
+        Form {
+            Section {
+                VStack(spacing: 10) {
+                    Image(systemName: "lock.shield.fill").font(.system(size: 48)).foregroundStyle(AMTheme.skyDeep)
+                    Text(L("admin.unlock.title")).font(.title3.bold())
+                    Text(L("admin.unlock.hint")).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            Section {
+                SecureField(L("admin.unlock.password"), text: $password)
+                    .textContentType(.password)
+                    .onSubmit { Task { await unlock() } }
+                if let error { Text(error).foregroundStyle(AMTheme.danger) }
+                Button {
+                    Task { await unlock() }
+                } label: {
+                    if busy { ProgressView() } else { Text(L("admin.unlock.button")).bold() }
+                }
+                .disabled(password.isEmpty || busy)
+            }
+        }
+        .navigationTitle(L("admin.title"))
+    }
+
+    private func unlock() async {
+        guard !password.isEmpty else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            try await store.unlockAdmin(password: password)
+            password = ""
+            error = nil
+        } catch {
+            password = ""
+            self.error = error.localizedDescription
+        }
+    }
+}
+
 struct AMAdminDestination: View {
+    @EnvironmentObject private var store: AMStore
     let section: AMAdminSection
 
     var body: some View {
+        if store.isStaff {
+            content
+        } else {
+            AMAdminHome()
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch section {
         case .dashboard: List { AMMorningDashboard() }.navigationTitle("Morning Dashboard")
         case .calendar: AMContentCalendarView()

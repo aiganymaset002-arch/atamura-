@@ -166,7 +166,9 @@ struct AMModerationView: View {
         if let index = store.db.posts.firstIndex(where: { $0.id == targetId }) { store.db.posts[index].status = .rejected }
         if let index = store.db.projects.firstIndex(where: { $0.id == targetId }) { store.db.projects[index].status = .rejected }
         if let index = store.db.museum.firstIndex(where: { $0.id == targetId }) { store.db.museum[index].status = .rejected }
-        if let index = store.db.users.firstIndex(where: { $0.id == targetId }) { store.db.users[index].blocked = true }
+        if let index = store.db.users.firstIndex(where: { $0.id == targetId }), store.db.users[index].role != .admin {
+            store.db.users[index].blocked = true
+        }
         store.db.comments.removeAll { $0.id == targetId }
     }
 }
@@ -390,19 +392,11 @@ struct AMUsersAdminView: View {
                         Spacer()
                         Text("\(user.points) pts").font(.caption).monospacedDigit()
                     }
-                    if store.isAdmin && user.id != store.currentUser?.id {
-                        HStack {
-                            Picker(L("users.role"), selection: Binding(get: { user.role }, set: { setRole(user.id, $0) })) {
-                                ForEach(AMRole.allCases, id: \.self) { Text($0.title).tag($0) }
-                            }
-                            .pickerStyle(.menu)
-                            Spacer()
-                            Toggle(L("users.blocked"), isOn: Binding(get: { user.blocked }, set: { setBlocked(user.id, $0) }))
-                                .fixedSize()
-                        }
-                        .font(.caption)
-                    } else {
-                        AMTag(text: user.role.title)
+                    if user.role == .admin {
+                        AMTag(text: L("users.owner"), icon: "lock.shield", color: AMTheme.gold)
+                    } else if store.isAdmin {
+                        Toggle(L("users.blocked"), isOn: Binding(get: { user.blocked }, set: { setBlocked(user.id, $0) }))
+                            .font(.caption)
                     }
                 }
             }
@@ -412,19 +406,12 @@ struct AMUsersAdminView: View {
         .task { await cloud.loadMembers() }
     }
 
-    private func setRole(_ id: UUID, _ role: AMRole) {
-        if let index = store.db.users.firstIndex(where: { $0.id == id }) { store.db.users[index].role = role }
-        guard cloud.isSignedIn else { return }
-        Task {
-            do { try await cloud.updateMember(id, role: role) } catch { self.error = error.localizedDescription }
-        }
-    }
-
     private func setBlocked(_ id: UUID, _ blocked: Bool) {
-        if let index = store.db.users.firstIndex(where: { $0.id == id }) { store.db.users[index].blocked = blocked }
+        guard let index = store.db.users.firstIndex(where: { $0.id == id }), store.db.users[index].role != .admin else { return }
+        store.db.users[index].blocked = blocked
         guard cloud.isSignedIn else { return }
         Task {
-            do { try await cloud.updateMember(id, blocked: blocked) } catch { self.error = error.localizedDescription }
+            do { try await cloud.setBlocked(id, blocked) } catch { self.error = error.localizedDescription }
         }
     }
 }
