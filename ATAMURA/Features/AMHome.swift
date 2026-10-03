@@ -119,7 +119,7 @@ struct AMHomeScreen: View {
                         .font(.subheadline)
                 }
                 Spacer()
-                if mode != .asd { AMLogo(size: 54) }
+                if mode != .asd { AMLogo(size: 48).padding(6).background(.white, in: Circle()) }
             }
             if let user = store.currentUser {
                 HStack {

@@ -82,7 +82,7 @@ struct AMWelcomeView: View {
                 VStack(spacing: 24) {
                     AMLanguagePicker()
                     VStack(spacing: 10) {
-                        AMLogo(size: 96)
+                        AMLogo(size: 150)
                         Text("ATA MURA").font(.system(size: 40, weight: .heavy, design: .serif))
                         Text("Digital Heritage & Innovation Platform").font(.subheadline).foregroundStyle(.secondary)
                         Text("Heritage creates innovation.").font(.headline).foregroundStyle(AMTheme.skyDeep)
@@ -127,24 +127,16 @@ struct AMWelcomeView: View {
     }
 }
 
-/// Знак ATA MURA: солнце над степью (рисуется кодом, без картинок).
+/// Логотип ATA MURA — снежный барс на щите с казахским орнаментом.
 struct AMLogo: View {
     var size: CGFloat = 60
 
     var body: some View {
-        ZStack {
-            Circle().fill(AMTheme.heroGradient)
-            ForEach(0..<16, id: \.self) { index in
-                Capsule()
-                    .fill(AMTheme.gold)
-                    .frame(width: size * 0.04, height: size * 0.12)
-                    .offset(y: -size * 0.33)
-                    .rotationEffect(.degrees(Double(index) * 22.5))
-            }
-            Circle().fill(AMTheme.gold).frame(width: size * 0.36, height: size * 0.36)
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+        Image("ATAMuraLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityLabel("ATA MURA")
     }
 }
 

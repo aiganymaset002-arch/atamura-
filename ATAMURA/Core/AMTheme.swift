@@ -11,18 +11,21 @@ import AVFoundation
 import UIKit
 
 enum AMTheme {
-    /// Небесно-бирюзовый — цвет флага Казахстана.
-    static let sky = Color(red: 0.0, green: 0.62, blue: 0.76)
-    static let skyDeep = Color(red: 0.0, green: 0.36, blue: 0.50)
-    /// Золото солнца и орнамента.
+    /// Фирменный тёмно-синий цвет логотипа ATA MURA (снежный барс).
+    static let navy = Color(red: 0.020, green: 0.137, blue: 0.294)
+    /// Основной цвет интерфейса — синий логотипа.
+    static let skyDeep = navy
+    /// Светлый синий для акцентов и фона.
+    static let sky = Color(red: 0.18, green: 0.38, blue: 0.64)
+    /// Золото орнамента.
     static let gold = Color(red: 0.96, green: 0.73, blue: 0.10)
-    static let night = Color(red: 0.05, green: 0.12, blue: 0.20)
-    static let calm = Color(red: 0.33, green: 0.47, blue: 0.52)
+    static let night = Color(red: 0.03, green: 0.08, blue: 0.16)
+    static let calm = Color(red: 0.33, green: 0.42, blue: 0.52)
     static let success = Color(red: 0.10, green: 0.55, blue: 0.30)
     static let danger = Color(red: 0.78, green: 0.15, blue: 0.15)
 
     static var heroGradient: LinearGradient {
-        LinearGradient(colors: [skyDeep, sky], startPoint: .topLeading, endPoint: .bottomTrailing)
+        LinearGradient(colors: [navy, Color(red: 0.09, green: 0.25, blue: 0.47)], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 
