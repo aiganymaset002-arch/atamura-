@@ -5,8 +5,8 @@
 участник публикует историю на своём iPhone, редактор одобряет её на своём — и она появляется в ленте у всех.
 
 Проект Supabase — «ATA Mura» (`https://erqaygvxyttofibmqdcf.supabase.co`), его адрес уже прописан
-в приложении. Publishable key вставьте в `ATAMURA/Core/AMCloud.swift` (`AMCloudDefaults.anonKey`)
-или в приложении: «Профиль → Настройки → Сервер ATA MURA».
+в приложении вместе с publishable-ключом (`ATAMURA/Core/AMCloud.swift`, `AMCloudDefaults`).
+Сервер включён по умолчанию.
 
 ## 1. Создать таблицы
 

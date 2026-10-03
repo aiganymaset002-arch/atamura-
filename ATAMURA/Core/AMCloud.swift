@@ -46,7 +46,7 @@ enum AMKeychain {
 /// Секретный ключ (service_role / sb_secret_…) в приложение не добавлять никогда.
 enum AMCloudDefaults {
     static let projectURL = "https://erqaygvxyttofibmqdcf.supabase.co"
-    static let anonKey = ""
+    static let anonKey = "sb_publishable_5Q0OhIRmmHkRPskzfWQgvw_Xx89C-a2"
 }
 
 struct AMCloudSession: Codable {
@@ -99,7 +99,7 @@ enum AMCloudError: LocalizedError {
 final class AMCloud: ObservableObject {
     static let shared = AMCloud()
 
-    /// Сервер включается вручную после выполнения schema.sql (Настройки → Сервер).
+    /// Сервер ATA Mura (можно выключить в Настройки → Сервер для работы без сети).
     @Published var enabled: Bool {
         didSet { UserDefaults.standard.set(enabled, forKey: "atamura.cloud.enabled") }
     }
@@ -134,7 +134,8 @@ final class AMCloud: ObservableObject {
     private init() {
         let defaults = UserDefaults.standard
         func stored(_ key: String) -> String? { defaults.string(forKey: key).flatMap { $0.isEmpty ? nil : $0 } }
-        enabled = defaults.bool(forKey: "atamura.cloud.enabled")
+        // Сервер ATA Mura настроен — по умолчанию приложение работает через него.
+        enabled = defaults.object(forKey: "atamura.cloud.enabled") as? Bool ?? true
         projectURL = stored("atamura.cloud.url") ?? AMCloudDefaults.projectURL
         anonKey = stored("atamura.cloud.key") ?? AMCloudDefaults.anonKey
         knownHashes = defaults.dictionary(forKey: "atamura.cloud.hashes") as? [String: String] ?? [:]
